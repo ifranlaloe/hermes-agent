@@ -37,6 +37,7 @@ def _captured_context_cwd(agent):
 
     with (
         patch("run_agent.load_soul_md", return_value=""),
+        patch("run_agent.load_identity_md", return_value=""),
         patch("run_agent.build_nous_subscription_prompt", return_value=""),
         patch("run_agent.build_environment_hints", return_value=""),
         patch("run_agent.build_context_files_prompt", side_effect=fake_context_files),
@@ -60,6 +61,7 @@ class TestContextFileCwd:
 def _stable_prompt(agent):
     with (
         patch("run_agent.load_soul_md", return_value=""),
+        patch("run_agent.load_identity_md", return_value=""),
         patch("run_agent.build_nous_subscription_prompt", return_value=""),
         patch("run_agent.build_environment_hints", return_value=""),
         patch("run_agent.build_context_files_prompt", return_value=""),
@@ -99,3 +101,30 @@ class TestCodingContextBlock:
         monkeypatch.setenv("TERMINAL_CWD", str(tmp_path))
         agent = _make_agent(valid_tool_names=[], platform="cli")
         assert "coding agent" not in _stable_prompt(agent)
+
+
+class TestIdentityMdStableLayer:
+    def test_injected_when_present(self):
+        agent = _make_agent()
+        with (
+            patch("run_agent.load_soul_md", return_value=""),
+            patch("run_agent.load_identity_md", return_value="Operate like a seasoned engineer and operator."),
+            patch("run_agent.build_nous_subscription_prompt", return_value=""),
+            patch("run_agent.build_environment_hints", return_value=""),
+            patch("run_agent.build_context_files_prompt", return_value=""),
+        ):
+            stable = build_system_prompt_parts(agent)["stable"]
+        assert "Operate like a seasoned engineer and operator." in stable
+
+    def test_skipped_when_context_rules_are_ignored(self):
+        agent = _make_agent(skip_context_files=True)
+        with (
+            patch("run_agent.load_soul_md", return_value=""),
+            patch("run_agent.load_identity_md", return_value="IDENTITY SHOULD NOT LOAD") as identity_mock,
+            patch("run_agent.build_nous_subscription_prompt", return_value=""),
+            patch("run_agent.build_environment_hints", return_value=""),
+            patch("run_agent.build_context_files_prompt", return_value=""),
+        ):
+            stable = build_system_prompt_parts(agent)["stable"]
+        identity_mock.assert_not_called()
+        assert "IDENTITY SHOULD NOT LOAD" not in stable

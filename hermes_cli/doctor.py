@@ -1169,6 +1169,17 @@ def run_doctor(args):
             check_ok(f"Created {_DHH}/SOUL.md with basic template")
             fixed_count += 1
     
+    # Check optional IDENTITY.md operating-identity / expertise file
+    identity_path = hermes_home / "IDENTITY.md"
+    if identity_path.exists():
+        content = identity_path.read_text(encoding="utf-8").strip()
+        if content:
+            check_ok(f"{_DHH}/IDENTITY.md exists (operating identity configured)")
+        else:
+            check_info(f"{_DHH}/IDENTITY.md exists but is empty — edit it to define Hermes's operating identity or remove it")
+    else:
+        check_info(f"{_DHH}/IDENTITY.md not found (optional — create it to define Hermes's expertise/operating identity)")
+
     # Check memory directory
     memories_dir = hermes_home / "memories"
     if memories_dir.exists():

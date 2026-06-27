@@ -1730,35 +1730,58 @@ def _truncate_content(
     return head + marker + tail
 
 
-def load_soul_md(context_length: Optional[int] = None) -> Optional[str]:
-    """Load SOUL.md from HERMES_HOME and return its content, or None.
+def _load_hermes_home_markdown(
+    filename: str,
+    *,
+    context_length: Optional[int] = None,
+) -> Optional[str]:
+    """Load *filename* from HERMES_HOME and return its sanitized content.
 
-    Used as the agent identity (slot #1 in the system prompt).  When this
-    returns content, ``build_context_files_prompt`` should be called with
-    ``skip_soul=True`` so SOUL.md isn't injected twice.
+    Used for stable identity/persona files that live at the profile root. The
+    content is scanned and truncated exactly like other injected context files,
+    but stays in the stable tier instead of project-context discovery.
     """
     try:
         from hermes_cli.config import ensure_hermes_home
         ensure_hermes_home()
     except Exception as e:
-        logger.debug("Could not ensure HERMES_HOME before loading SOUL.md: %s", e)
+        logger.debug("Could not ensure HERMES_HOME before loading %s: %s", filename, e)
 
-    soul_path = get_hermes_home() / "SOUL.md"
-    if not soul_path.exists():
+    home_path = get_hermes_home() / filename
+    if not home_path.exists():
         return None
     try:
-        content = soul_path.read_text(encoding="utf-8").strip()
+        content = home_path.read_text(encoding="utf-8").strip()
         if not content:
             return None
-        content = _scan_context_content(content, "SOUL.md")
+        content = _scan_context_content(content, filename)
         content = _truncate_content(
-            content, "SOUL.md", context_length=context_length,
-            read_path=str(soul_path),
+            content, filename, context_length=context_length,
+            read_path=str(home_path),
         )
         return content
     except Exception as e:
-        logger.debug("Could not read SOUL.md from %s: %s", soul_path, e)
+        logger.debug("Could not read %s from %s: %s", filename, home_path, e)
         return None
+
+
+def load_soul_md(context_length: Optional[int] = None) -> Optional[str]:
+    """Load SOUL.md from HERMES_HOME and return its content, or None.
+
+    Used as the persona/identity layer in the stable system prompt. When this
+    returns content, ``build_context_files_prompt`` should be called with
+    ``skip_soul=True`` so SOUL.md isn't injected twice.
+    """
+    return _load_hermes_home_markdown("SOUL.md", context_length=context_length)
+
+
+def load_identity_md(context_length: Optional[int] = None) -> Optional[str]:
+    """Load IDENTITY.md from HERMES_HOME and return its content, or None.
+
+    This file is an optional stable identity/expertise layer that complements
+    SOUL.md without conflating it with USER.md or persistent memory.
+    """
+    return _load_hermes_home_markdown("IDENTITY.md", context_length=context_length)
 
 
 def _load_hermes_md(cwd_path: Path, context_length: Optional[int] = None) -> str:
@@ -1872,6 +1895,8 @@ def build_context_files_prompt(
       4. .cursorrules / .cursor/rules/*.mdc  (cwd only)
 
     SOUL.md from HERMES_HOME is independent and always included when present.
+    IDENTITY.md from HERMES_HOME is loaded separately in the stable identity
+    tier and is not part of project-context discovery.
 
     Each context source is capped before injection. The cap defaults to the
     model's context window (scaled — see ``_dynamic_context_file_max_chars``)

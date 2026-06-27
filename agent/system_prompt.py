@@ -161,6 +161,14 @@ def build_system_prompt_parts(agent: Any, system_message: Optional[str] = None) 
         # Fallback to hardcoded identity
         stable_parts.append(DEFAULT_AGENT_IDENTITY)
 
+    # Optional stable operating-identity / expertise layer. Keep this separate
+    # from USER.md and MEMORY.md so user profile and durable facts stay distinct
+    # from how the assistant should reason and what lens it should embody.
+    if agent.load_soul_identity or not agent.skip_context_files:
+        _identity_content = _r.load_identity_md(_ctx_len)
+        if _identity_content:
+            stable_parts.append(_identity_content)
+
     # Pointer to the hermes-agent skill + docs for user questions about Hermes itself.
     stable_parts.append(HERMES_AGENT_HELP_GUIDANCE)
 
@@ -475,7 +483,8 @@ def build_system_prompt(agent: Any, system_message: Optional[str] = None) -> str
     prompt is stable across all turns in a session, maximizing prefix cache
     hits.
 
-    Layers are ordered cache-friendly: stable identity/guidance first,
+    Layers are ordered cache-friendly: stable identity/guidance first
+    (DEFAULT identity, SOUL.md, optional IDENTITY.md, operating guidance),
     then session-stable context files, then per-call volatile content
     (memory, USER profile, timestamp).  The whole string is treated as
     one cached block — Hermes never rebuilds or reinjects parts of it

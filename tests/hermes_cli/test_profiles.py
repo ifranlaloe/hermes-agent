@@ -206,6 +206,7 @@ class TestCreateProfile:
         (default_home / "config.yaml").write_text("model: test")
         (default_home / ".env").write_text("KEY=val")
         (default_home / "SOUL.md").write_text("Be helpful.")
+        (default_home / "IDENTITY.md").write_text("Think like a seasoned operator.")
 
         profile_dir = create_profile("coder", clone_config=True, no_alias=True)
 
@@ -214,6 +215,7 @@ class TestCreateProfile:
         assert cloned_config["model"] == "test"
         assert (profile_dir / ".env").read_text().strip() == "KEY=val"
         assert (profile_dir / "SOUL.md").read_text() == "Be helpful."
+        assert (profile_dir / "IDENTITY.md").read_text() == "Think like a seasoned operator."
 
     def test_clone_config_migrates_legacy_config_version(self, profile_env):
         tmp_path = profile_env

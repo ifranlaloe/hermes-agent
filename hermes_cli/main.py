@@ -2336,7 +2336,7 @@ def cmd_chat(args):
     if getattr(args, "ignore_user_config", False):
         os.environ["HERMES_IGNORE_USER_CONFIG"] = "1"
 
-    # --ignore-rules: skip auto-injection of AGENTS.md/SOUL.md/.cursorrules
+    # --ignore-rules: skip auto-injection of AGENTS.md/SOUL.md/IDENTITY.md/.cursorrules
     # (rules), memory entries, and any preloaded skills coming from user config.
     # Maps to AIAgent(skip_context_files=True, skip_memory=True).
     if getattr(args, "ignore_rules", False):
@@ -10585,7 +10585,7 @@ def cmd_profile(args):
                     )
                 else:
                     print(
-                        f"Cloned config, .env, SOUL.md, and skills from {source_label}."
+                        f"Cloned config, .env, SOUL.md, IDENTITY.md, and skills from {source_label}."
                     )
 
             # Auto-clone Honcho config for the new profile (only with clone operations)
@@ -10652,12 +10652,14 @@ def cmd_profile(args):
             if clone or clone_all:
                 print(f"\n  Edit {profile_dir_display}/.env for different API keys")
                 print(f"  Edit {profile_dir_display}/SOUL.md for different personality")
+                print(f"  Edit {profile_dir_display}/IDENTITY.md for different operating identity")
             else:
                 print(
                     f"\n  ⚠ This profile has no API keys yet. Run '{name} setup' first,"
                 )
                 print(f"    or it will inherit keys from your shell environment.")
                 print(f"  Edit {profile_dir_display}/SOUL.md to customize personality")
+                print(f"  Create {profile_dir_display}/IDENTITY.md to define operating identity/expertise")
             print()
 
         except (ValueError, FileExistsError, FileNotFoundError) as e:
@@ -10808,6 +10810,9 @@ def cmd_profile(args):
         )
         print(
             f"SOUL.md: {'exists' if (profile_dir / 'SOUL.md').exists() else 'not configured'}"
+        )
+        print(
+            f"IDENTITY.md: {'exists' if (profile_dir / 'IDENTITY.md').exists() else 'not configured'}"
         )
         if dist_name:
             print(f"Distribution: {dist_name}@{dist_version or '?'}")
